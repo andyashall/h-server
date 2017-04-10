@@ -33,18 +33,11 @@ artJson = [ Post { _id = "fhpzah1lCBUGt9dS4rhM", title = "Mlog - Meeting Action 
 -- projJson :: [Post]
 -- projJson = [ Post { _id = "fhpzah1lCBUGt9dS4rhM", title = "Woop - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet-2", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 }, Post { _id = "fhpzah1lCBUGt9dS4rhZ", title = "Mlog - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet-1", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 }, Post { _id = "fhpzah1lCBUGt9dS4rhh", title = "Another - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 } ]
 
-projPath :: FilePath
-projPath = "projects.json"
+jsonFile :: FilePath
+jsonFile = "projects.json"
 
 getJSON :: IO B.ByteString
-getJSON = B.readFile projPath
-
-projJson :: IO (Either String [Post])
-projJson = do
-  d <- (eitherDecode <$> getJSON)
-  case d of
-    Left err -> return err :: IO String
-    Right ps -> return ps :: IO [Post]
+getJSON = B.readFile jsonFile
 
 staticServe :: ScottyM ()
 staticServe = do
@@ -65,16 +58,19 @@ serve = do
     Web.Scotty.json $ (filter (matchesUrl fUrl) artJson) !!0
   get "/api/getproject" $ do
     fUrl <- param "url"
+    d <- (eitherDecode <$> getJSON) :: IO (Either String [Post])
+    case d of
+      Left err -> putStrLn err
+      Right ps -> Web.Scotty.json $ (filter (matchesUrl fUrl) ps) !!0
     -- let projects = (decode projJson) :: [Post]
-    Web.Scotty.json $ (filter (matchesUrl fUrl) projJson) !!0
-  get "/articles" $ do
-    Web.Scotty.json $ artJson
-  get "/projects" $ do
-    Web.Scotty.json $ projJson
-  -- get "/api/getarticles" $ do
+  -- get "/articles" $ do
   --   Web.Scotty.json $ artJson
-  -- get "/api/getprojects" $ do
+  -- get "/projects" $ do
   --   Web.Scotty.json $ projJson
+  get "/api/getarticles" $ do
+    Web.Scotty.json $ artJson
+  get "/api/getprojects" $ do
+    Web.Scotty.json $ projJson
   get "" $ do
     file $ "./dist/index.html"
 
