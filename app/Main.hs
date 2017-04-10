@@ -7,6 +7,8 @@ import Data.Aeson
 import Data.Aeson.Lens
 import Control.Lens
 import Data.Text (Text)
+import Control.Applicative
+import Control.Monad
 import GHC.Generics
 import Network.Wai.Middleware.Static
 import qualified Data.ByteString.Lazy as B
@@ -28,14 +30,21 @@ instance ToJSON Post
 artJson :: [Post]
 artJson = [ Post { _id = "fhpzah1lCBUGt9dS4rhM", title = "Mlog - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet-1", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 }, Post { _id = "fhpzah1lCBUGt9dS4rhZ", title = "Mlog - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet-2", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 }, Post { _id = "fhpzah1lCBUGt9dS4rhh", title = "Another - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 } ]
 
-projJson :: [Post]
-projJson = [ Post { _id = "fhpzah1lCBUGt9dS4rhM", title = "Woop - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet-2", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 }, Post { _id = "fhpzah1lCBUGt9dS4rhZ", title = "Mlog - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet-1", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 }, Post { _id = "fhpzah1lCBUGt9dS4rhh", title = "Another - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 } ]
+-- projJson :: [Post]
+-- projJson = [ Post { _id = "fhpzah1lCBUGt9dS4rhM", title = "Woop - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet-2", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 }, Post { _id = "fhpzah1lCBUGt9dS4rhZ", title = "Mlog - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet-1", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 }, Post { _id = "fhpzah1lCBUGt9dS4rhh", title = "Another - Meeting Action Tracker", url = "lorem-ipsum-dolor-sit-amet", created = "2017-03-28T12:42:24.915Z", subject = "JavaScript", summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", content = "Hello", likes = 1 } ]
 
--- projPath :: FilePath
--- projPath = "projects.json"
+projPath :: FilePath
+projPath = "projects.json"
 
--- projJson :: IO B.ByteString
--- projJson = B.readFile projPath
+getJSON :: IO B.ByteString
+getJSON = B.readFile projPath
+
+projJson :: IO (Either String [Post])
+projJson = do
+  d <- (eitherDecode <$> getJSON)
+  case d of
+    Left err -> return err :: IO String
+    Right ps -> return ps :: IO [Post]
 
 staticServe :: ScottyM ()
 staticServe = do
@@ -58,11 +67,15 @@ serve = do
     fUrl <- param "url"
     -- let projects = (decode projJson) :: [Post]
     Web.Scotty.json $ (filter (matchesUrl fUrl) projJson) !!0
-  get "/api/getarticles" $ do
+  get "/articles" $ do
     Web.Scotty.json $ artJson
-  get "/api/getprojects" $ do
+  get "/projects" $ do
     Web.Scotty.json $ projJson
+  -- get "/api/getarticles" $ do
+  --   Web.Scotty.json $ artJson
+  -- get "/api/getprojects" $ do
+  --   Web.Scotty.json $ projJson
   get "" $ do
     file $ "./dist/index.html"
 
-main = scotty 4000 (staticServe >> serve)
+main = scotty 4000 (serve >> staticServe)
