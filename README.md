@@ -1,5 +1,16 @@
 # h-server
 
+## Decisions
+
+- Try implementing the post liking request and mongoDB with Haskell
+
+## Todo
+
+- Change the dist routes for /api/getpost to /api/getarticle (should now work as a static website)
+- Add post routes for liking a post 
+
+## Info
+
 - [Great Haskell docs](http://dev.stephendiehl.com/hask/)
 
 - [Warp](https://hackage.haskell.org/package/wai) 
